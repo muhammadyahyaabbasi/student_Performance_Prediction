@@ -3,17 +3,19 @@ import streamlit as st
 import joblib
 import numpy as np
 import pandas as pd
+import os
 
-# Page config
+# Page config (must be first Streamlit command)
 st.set_page_config(
     page_title="Student Performance Predictor",
     page_icon="🎓",
     layout="centered"
 )
 
-# Load models
+# Load models with proper error handling
 @st.cache_resource
 def load_models():
+    """Load all ML models and scaler"""
     try:
         models = {
             'knn_clf': joblib.load("knn_classifier.pkl"),
@@ -24,13 +26,31 @@ def load_models():
         }
         return models
     except FileNotFoundError as e:
-        st.error(f"❌ Model files not found. Please run main.py first to train the models.\n\nMissing: {str(e)}")
-        st.stop()
+        return None
     except Exception as e:
-        st.error(f"❌ Error loading models: {str(e)}")
-        st.stop()
+        return None
 
+# Check if model files exist
+model_files = [
+    "knn_classifier.pkl",
+    "logistic_regression.pkl", 
+    "knn_regressor.pkl",
+    "linear_regression.pkl",
+    "scaler.pkl"
+]
+
+missing_files = [f for f in model_files if not os.path.exists(f)]
+
+if missing_files:
+    st.error(f"❌ **Model files not found!**\n\nPlease run `main.py` first to train the models.\n\nMissing files:\n- " + "\n- ".join(missing_files))
+    st.stop()
+
+# Load models (now within Streamlit context)
 models = load_models()
+
+if models is None:
+    st.error("❌ **Error loading models!** Please ensure all model files are present and valid.")
+    st.stop()
 
 # App title
 st.title("🎓 Student Performance Prediction")
